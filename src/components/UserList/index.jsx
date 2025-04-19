@@ -1,41 +1,85 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Divider,
     List,
     ListItem,
     ListItemText,
     Typography,
-    Link,
+    CircularProgress,
+    Alert,
+    Box,
 } from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { fetchUsers } from "../../lib/fetchModelData";
 
 import "./styles.css";
-import models from "../../modelData/models";
 
-/**
- * Define UserList, a React component of Project 4.
- */
 function UserList() {
-    const users = models.userListModel();
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const loadUsers = async () => {
+            try {
+                setLoading(true);
+                const data = await fetchUsers();
+                setUsers(data);
+                setError(null);
+            } catch (err) {
+                setError(err.message);
+                console.error("Error loading users:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUsers();
+    }, []);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
+
     return (
         <div>
             <Typography variant="h6" sx={{ mb: 2 }}>
-                Users
+                List Users
             </Typography>
             <List component="nav">
                 {users.map((user) => (
                     <React.Fragment key={user._id}>
-                        <ListItem>
-                            <Link
-                                component={RouterLink}
+                        <ListItem disablePadding>
+                            <NavLink
                                 to={`/users/${user._id}`}
-                                underline="none"
-                                color="inherit"
+                                style={({ isActive }) => {
+                                    return {
+                                        textDecoration: "none",
+                                        color: "inherit",
+                                        width: "100%",
+                                        padding: "8px 16px",
+                                        backgroundColor: isActive
+                                            ? "#e3f2fd"
+                                            : "transparent",
+                                    };
+                                }}
                             >
                                 <ListItemText
                                     primary={`${user.first_name} ${user.last_name}`}
                                 />
-                            </Link>
+                            </NavLink>
                         </ListItem>
                         <Divider />
                     </React.Fragment>

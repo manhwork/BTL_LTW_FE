@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Typography,
     Box,
@@ -7,27 +7,72 @@ import {
     List,
     ListItem,
     ListItemText,
+    CircularProgress,
+    Alert,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { fetchUser } from "../../lib/fetchModelData";
 
 import "./styles.css";
-import { useParams } from "react-router-dom";
-import models from "../../modelData/models";
 
-/**
- * Define UserDetail, a React component of Project 4.
- */
 function UserDetail() {
     const { userId } = useParams();
-    const user = models.userModel(userId);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const loadUser = async () => {
+            try {
+                setLoading(true);
+                const userData = await fetchUser(userId);
+                setUser(userData);
+                setError(null);
+            } catch (err) {
+                setError(err.message);
+                console.error("Error loading user:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUser();
+    }, [userId]);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
 
     if (!user) {
-        return <Typography>User not found</Typography>;
+        return (
+            <Box sx={{ p: 2 }}>
+                <Alert severity="warning">User not found</Alert>
+            </Box>
+        );
     }
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h4" gutterBottom>
+            <Typography
+                variant="h4"
+                sx={{
+                    fontWeight: "bold",
+                }}
+                gutterBottom
+            >
                 {user.first_name} {user.last_name}
             </Typography>
             <Paper sx={{ p: 2, mb: 2 }}>
@@ -47,7 +92,14 @@ function UserDetail() {
                     <ListItem>
                         <ListItemText
                             primary="Description"
-                            secondary={user.description}
+                            secondary={
+                                <Typography
+                                    component="span"
+                                    dangerouslySetInnerHTML={{
+                                        __html: user.description,
+                                    }}
+                                />
+                            }
                         />
                     </ListItem>
                 </List>
@@ -58,7 +110,7 @@ function UserDetail() {
                 variant="button"
                 color="primary"
             >
-                View Photos
+                View Photos Of {user.first_name} {user.last_name}
             </Link>
         </Box>
     );
